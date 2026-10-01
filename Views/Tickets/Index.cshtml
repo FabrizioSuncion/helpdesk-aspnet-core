@@ -33,7 +33,7 @@ else
             {
                 <tr>
                     <td>@t.Id</td>
-                    <td>@t.Titulo</td>
+                    <td><a asp-action="Details" asp-route-id="@t.Id">@t.Titulo</a></td>
                     <td>@t.Categoria?.Nombre</td>
                     <td>@t.Prioridad</td>
                     <td>@t.Estado</td>
@@ -46,3 +46,4 @@ else
         </table>
     </div>
 }
+

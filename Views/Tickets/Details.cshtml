@@ -1,0 +1,132 @@
+﻿@model HelpDesk.Models.TicketDetailsViewModel
+@{
+    var t = Model.Ticket;
+    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    var esAdmin = User.IsInRole("Administrador");
+    var esTecnico = User.IsInRole("Tecnico");
+    var puedeCambiarEstado = esAdmin || (esTecnico && t.TecnicoId == userId);
+    ViewData["Title"] = $"Ticket #{t.Id}";
+
+    string Etiqueta(HelpDesk.Models.EstadoTicket e) => e == HelpDesk.Models.EstadoTicket.EnProceso ? "En proceso" : e.ToString();
+
+    string Color(HelpDesk.Models.EstadoTicket e) => e switch
+    {
+        HelpDesk.Models.EstadoTicket.Abierto => "bg-primary",
+        HelpDesk.Models.EstadoTicket.EnProceso => "bg-warning text-dark",
+        HelpDesk.Models.EstadoTicket.Resuelto => "bg-success",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h1 class="h3 mb-2">#@t.Id - @t.Titulo</h1>
+        <span class="badge @Color(t.Estado)">@Etiqueta(t.Estado)</span>
+        <span class="badge bg-light text-dark border">Prioridad: @t.Prioridad</span>
+        <span class="badge bg-light text-dark border">@t.Categoria?.Nombre</span>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">Volver</a>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">Descripción</div>
+            <div class="card-body" style="white-space: pre-wrap;">@t.Descripcion</div>
+        </div>
+
+        <h2 class="h5">Comentarios (@t.Comentarios.Count)</h2>
+        @if (!t.Comentarios.Any())
+        {
+            <p class="text-muted">Todavía no hay comentarios.</p>
+        }
+        @foreach (var c in t.Comentarios.OrderBy(c => c.Fecha))
+        {
+            <div class="card mb-2">
+                <div class="card-body py-2">
+                    <div class="small text-muted">@c.Autor?.NombreCompleto - @c.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                    <div style="white-space: pre-wrap;">@c.Texto</div>
+                </div>
+            </div>
+        }
+
+        <form asp-action="AgregarComentario" method="post" class="mt-3">
+            <input type="hidden" name="id" value="@t.Id" />
+            <div class="mb-2">
+                <textarea name="texto" class="form-control" rows="3" maxlength="1000" placeholder="Escribe un comentario..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Agregar comentario</button>
+        </form>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header">Información</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>Creado por:</strong> @t.Creador?.NombreCompleto</li>
+                <li class="list-group-item"><strong>Fecha:</strong> @t.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</li>
+                <li class="list-group-item"><strong>Técnico:</strong> @(t.Tecnico?.NombreCompleto ?? "Sin asignar")</li>
+                @if (t.FechaCierre != null)
+                {
+                    <li class="list-group-item"><strong>Cierre:</strong> @t.FechaCierre.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</li>
+                }
+            </ul>
+        </div>
+
+        @if (esAdmin)
+        {
+            <div class="card mb-3">
+                <div class="card-header">Asignar técnico</div>
+                <div class="card-body">
+                    <form asp-action="AsignarTecnico" method="post">
+                        <input type="hidden" name="id" value="@t.Id" />
+                        <select name="tecnicoId" class="form-select mb-2">
+                            <option value="">Sin asignar</option>
+                            @foreach (var tec in Model.Tecnicos)
+                            {
+                                <option value="@tec.Value" selected="@tec.Selected">@tec.Text</option>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-outline-primary w-100">Guardar asignación</button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        @if (esTecnico && t.TecnicoId == null)
+        {
+            <div class="card mb-3">
+                <div class="card-body">
+                    <form asp-action="TomarTicket" method="post">
+                        <input type="hidden" name="id" value="@t.Id" />
+                        <button type="submit" class="btn btn-success w-100">Tomar este ticket</button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        @if (puedeCambiarEstado)
+        {
+            <div class="card mb-3">
+                <div class="card-header">Cambiar estado</div>
+                <div class="card-body">
+                    <form asp-action="CambiarEstado" method="post">
+                        <input type="hidden" name="id" value="@t.Id" />
+                        <select name="estado" class="form-select mb-2">
+                            @foreach (var e in Enum.GetValues<HelpDesk.Models.EstadoTicket>())
+                            {
+                                <option value="@((int)e)" selected="@(e == t.Estado)">@Etiqueta(e)</option>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-outline-primary w-100">Actualizar estado</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+</div>
