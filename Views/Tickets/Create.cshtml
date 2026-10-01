@@ -1,0 +1,43 @@
+﻿@model HelpDesk.Models.TicketCreateViewModel
+@{
+    ViewData["Title"] = "Nuevo ticket";
+}
+
+<h1 class="h3 mb-3">Nuevo ticket</h1>
+
+<form asp-action="Create" class="col-md-8">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="Titulo" class="form-label">Título</label>
+        <input asp-for="Titulo" class="form-control" />
+        <span asp-validation-for="Titulo" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Descripcion" class="form-label">Descripción</label>
+        <textarea asp-for="Descripcion" class="form-control" rows="5"></textarea>
+        <span asp-validation-for="Descripcion" class="text-danger"></span>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label asp-for="Prioridad" class="form-label">Prioridad</label>
+            <select asp-for="Prioridad" asp-items="Html.GetEnumSelectList<HelpDesk.Models.Prioridad>()" class="form-select"></select>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label asp-for="CategoriaId" class="form-label">Categoría</label>
+            <select asp-for="CategoriaId" asp-items="@((Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewBag.Categorias)" class="form-select">
+                <option value="">Seleccione...</option>
+            </select>
+            <span asp-validation-for="CategoriaId" class="text-danger"></span>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Crear ticket</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
